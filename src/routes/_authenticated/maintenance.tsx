@@ -39,11 +39,12 @@ function MaintenancePage() {
   const fetchM = useServerFn(getMaintenance);
   const { data } = useSuspenseQuery(
     queryOptions({
-      queryKey: ["maintenance", activeSession?.id],
-      queryFn: () => fetchM({ data: { sessionId: activeSession?.id } }),
+      queryKey: ["maintenance"],
+      queryFn: () => fetchM(),
     })
   );
-  const items = (data as any[]) ?? [];
+  const allItems = (data as any[]) ?? [];
+  const items = allItems.filter((i) => !activeSession || !i.session_id || i.session_id === activeSession.id);
   const total = items.filter((i) => !i.voided).reduce((a, i) => a + Number(i.amount), 0);
 
   const [open, setOpen] = useState(false);

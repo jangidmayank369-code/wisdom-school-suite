@@ -33,7 +33,7 @@ const MODES = ["Cash", "UPI", "Bank Transfer", "Cheque", "Other"];
 
 function StaffDetailPage() {
   const { staffId } = Route.useParams();
-  const { userId, isFinance, isAdmin, activeSession } = useErp();
+  const { isFinance, activeSession } = useErp();
   const qc = useQueryClient();
 
   const fetchDetail = useServerFn(getStaffDetail);

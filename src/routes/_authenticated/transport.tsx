@@ -39,11 +39,17 @@ function TransportPage() {
   const fetchT = useServerFn(getTransport);
   const { data } = useSuspenseQuery(
     queryOptions({
-      queryKey: ["transport", activeSession?.id],
-      queryFn: () => fetchT({ data: { sessionId: activeSession?.id } }),
+      queryKey: ["transport"],
+      queryFn: () => fetchT(),
     })
   );
   const t = data as any;
+  const inSession = (x: any) => !activeSession || !x.session_id || x.session_id === activeSession.id;
+  const exps = ((t?.expenses ?? []) as any[]).filter((x) => !x.voided && inSession(x));
+  const kms = ((t?.kmLogs ?? []) as any[]).filter((k) => inSession(k));
+  const expenseTotal = exps.reduce((a, x) => a + Number(x.amount), 0);
+  const totalKm = kms.reduce((a, k) => a + Number(k.km), 0);
+  const fuelEstimate = kms.reduce((a, k) => a + Number(k.km) * Number(k.rate_per_km), 0);
 
   // Vehicle dialog
   const [vOpen, setVOpen] = useState(false);
@@ -80,10 +86,10 @@ function TransportPage() {
       <PageHeader title="Transport" subtitle={activeSession ? activeSession.name : undefined} />
 
       <div className="grid grid-cols-2 gap-2.5">
-        <MoneyStat label="Vehicles" value={t.vehicles.length} plain />
-        <MoneyStat label="Session fuel cost (est.)" value={t.fuelEstimate} tone="warning" />
-        <MoneyStat label="Session KM" value={t.totalKm} plain />
-        <MoneyStat label="Session expenses" value={t.expenseTotal} tone="danger" />
+        <MoneyStat label="Vehicles" value={(t?.vehicles ?? []).length} plain />
+        <MoneyStat label="Fuel cost (est.)" value={fuelEstimate} tone="warning" />
+        <MoneyStat label="KM logged" value={totalKm} plain />
+        <MoneyStat label="Session expenses" value={expenseTotal} tone="danger" />
       </div>
 
       {isFinance && (
@@ -96,8 +102,8 @@ function TransportPage() {
 
       <SectionTitle>Vehicles &amp; drivers</SectionTitle>
       <div className="grid gap-2.5 md:grid-cols-2">
-        {t.vehicles.length === 0 && <Card className="p-4 text-sm text-muted-foreground">No vehicles yet.</Card>}
-        {t.vehicles.map((veh: any) => (
+        {(t?.vehicles ?? []).length === 0 && <Card className="p-4 text-sm text-muted-foreground">No vehicles yet.</Card>}
+        {(t?.vehicles ?? []).map((veh: any) => (
           <Card key={veh.id} className="p-4">
             <div className="flex items-center gap-2">
               <p className="flex-1 text-sm font-bold">{veh.vehicle_number}</p>
@@ -111,30 +117,37 @@ function TransportPage() {
         ))}
       </div>
 
-      {t.drivers.length > 0 && (
+      {kms.length > 0 && (
         <>
-          <SectionTitle>Driver KM &amp; fuel (this session)</SectionTitle>
+          <SectionTitle>Driver KM &amp; fuel</SectionTitle>
           <div className="space-y-2">
-            {t.drivers.map((d: any) => (
-              <Card key={d.driver_id} className="flex items-center gap-3 p-3.5">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{d.driver_name}</p>
-                  <p className="text-xs text-muted-foreground">{d.totalKm} KM @ ₹{d.rate}/KM</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Est. fuel cost</p>
-                  <p className="text-sm font-bold tabular-nums">{fmtMoney(d.estimatedCost)}</p>
-                </div>
-              </Card>
-            ))}
+            {(t?.drivers ?? []).map((d: any) => {
+              const dk = kms.filter((k) => k.staff_id === d.id);
+              if (dk.length === 0) return null;
+              const dKm = dk.reduce((a, k) => a + Number(k.km), 0);
+              const dCost = dk.reduce((a, k) => a + Number(k.km) * Number(k.rate_per_km), 0);
+              const rate = Number(dk[0]?.rate_per_km ?? 0);
+              return (
+                <Card key={d.id} className="flex items-center gap-3 p-3.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">{d.name}</p>
+                    <p className="text-xs text-muted-foreground">{dKm} KM @ ₹{rate}/KM</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">Est. fuel cost</p>
+                    <p className="text-sm font-bold tabular-nums">{fmtMoney(dCost)}</p>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         </>
       )}
 
       <SectionTitle>Recent expenses</SectionTitle>
       <Card className="divide-y p-0">
-        {t.expenses.length === 0 && <p className="p-4 text-sm text-muted-foreground">No transport expenses yet.</p>}
-        {t.expenses.map((x: any) => (
+        {exps.length === 0 && <p className="p-4 text-sm text-muted-foreground">No transport expenses yet.</p>}
+        {exps.map((x: any) => (
           <div key={x.id} className={"flex items-center gap-3 px-4 py-2.5 " + (x.voided ? "opacity-50" : "")}>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">
@@ -220,7 +233,7 @@ function TransportPage() {
               <Field label="Driver *">
                 <Select value={k.staff_id} onValueChange={(val) => setK({ ...k, staff_id: val })}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>{t.drivers.map((d: any) => <SelectItem key={d.driver_id} value={d.driver_id}>{d.driver_name}</SelectItem>)}</SelectContent>
+                  <SelectContent>{(t?.drivers ?? []).map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
               <Field label="Vehicle">
