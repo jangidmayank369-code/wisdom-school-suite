@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-type Sb = Awaited<ReturnType<typeof requireSupabaseAuth>> extends never ? never : any;
+type Sb = any;
 
 const hasRole = async (s: Sb, userId: string, role: string) => {
   const { data } = await s.from("user_roles").select("role").eq("user_id", userId).eq("role", role).maybeSingle();
@@ -301,7 +301,7 @@ export const addStudentCharge = createServerFn({ method: "POST" })
       .parse(d)
   )
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase.from("student_charges").insert(data);
+    const { error } = await context.supabase.from("student_charges").insert(data as any);
     if (error) throw error;
     return { ok: true };
   });
@@ -331,7 +331,7 @@ export const createStudent = createServerFn({ method: "POST" })
       .parse(d)
   )
   .handler(async ({ context, data }) => {
-    const { data: row, error } = await context.supabase.from("students").insert(data).select("id").single();
+    const { data: row, error } = await context.supabase.from("students").insert(data as any).select("id").single();
     if (error) throw error;
     return row;
   });
@@ -395,7 +395,7 @@ export const createStaff = createServerFn({ method: "POST" })
       .parse(d)
   )
   .handler(async ({ context, data }) => {
-    const { data: row, error } = await context.supabase.from("staff").insert(data).select("id").single();
+    const { data: row, error } = await context.supabase.from("staff").insert(data as any).select("id").single();
     if (error) throw error;
     return row;
   });
@@ -722,7 +722,7 @@ export const addTransportExpense = createServerFn({ method: "POST" })
       .parse(d)
   )
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase.from("transport_expenses").insert({ ...data, voided: false });
+    const { error } = await context.supabase.from("transport_expenses").insert({ ...data, voided: false } as any);
     if (error) throw error;
     return { ok: true };
   });
@@ -743,7 +743,7 @@ export const addKmLog = createServerFn({ method: "POST" })
       .parse(d)
   )
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase.from("driver_km_logs").insert(data);
+    const { error } = await context.supabase.from("driver_km_logs").insert(data as any);
     if (error) throw error;
     return { ok: true };
   });
@@ -764,7 +764,7 @@ export const createVehicle = createServerFn({ method: "POST" })
       .parse(d)
   )
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase.from("vehicles").insert({ ...data, active: true });
+    const { error } = await context.supabase.from("vehicles").insert({ ...data, active: true } as any);
     if (error) throw error;
     return { ok: true };
   });
