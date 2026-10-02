@@ -131,7 +131,6 @@ function ReportsPage() {
   };
 
   const exportMyAttendance = () => {
-    const rows = ((att.data as any[]) ?? []).filter((a) => a.att_date >= monthFrom && a.att_date <= monthTo);
     downloadCSV(`report-my-attendance-${monthFrom}-to-${monthTo}.csv`, [
       ["Date", "Status", "Marked By", "Remarks"],
       ...rows.map((a) => [a.att_date, a.status, a.marked_by_name ?? "", a.remarks ?? ""]),
