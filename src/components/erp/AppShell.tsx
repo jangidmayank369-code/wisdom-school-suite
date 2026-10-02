@@ -276,6 +276,9 @@ export function AppShell({ bootstrap, children }: { bootstrap: Bootstrap; childr
 
   const ctx: ErpCtx = {
     bootstrap,
+    profile: bootstrap.profile,
+    role: isAdmin ? "admin" : isAccountant ? "accountant" : "staff",
+    userId: bootstrap.userId,
     isAdmin,
     isFinance,
     isStaffOnly,
