@@ -12,8 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authenticated/attendance'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFeesRouteImport } from './routes/_authenticated/fees'
+import { Route as AuthenticatedLeaveRouteImport } from './routes/_authenticated/leave'
 import { Route as AuthenticatedMoreRouteImport } from './routes/_authenticated/more'
 import { Route as AuthenticatedPayrollRouteImport } from './routes/_authenticated/payroll'
 import { Route as AuthenticatedStaffIndexRouteImport } from './routes/_authenticated/staff.index'
@@ -35,6 +37,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAttendanceRoute = AuthenticatedAttendanceRouteImport.update({
+  id: '/attendance',
+  path: '/attendance',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -43,6 +50,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 const AuthenticatedFeesRoute = AuthenticatedFeesRouteImport.update({
   id: '/fees',
   path: '/fees',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedLeaveRoute = AuthenticatedLeaveRouteImport.update({
+  id: '/leave',
+  path: '/leave',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMoreRoute = AuthenticatedMoreRouteImport.update({
@@ -82,8 +94,10 @@ const AuthenticatedStudentsStudentIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/attendance': typeof AuthenticatedAttendanceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/fees': typeof AuthenticatedFeesRoute
+  '/leave': typeof AuthenticatedLeaveRoute
   '/more': typeof AuthenticatedMoreRoute
   '/payroll': typeof AuthenticatedPayrollRoute
   '/staff/$staffId': typeof AuthenticatedStaffStaffIdRoute
@@ -94,8 +108,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/attendance': typeof AuthenticatedAttendanceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/fees': typeof AuthenticatedFeesRoute
+  '/leave': typeof AuthenticatedLeaveRoute
   '/more': typeof AuthenticatedMoreRoute
   '/payroll': typeof AuthenticatedPayrollRoute
   '/staff/$staffId': typeof AuthenticatedStaffStaffIdRoute
@@ -108,8 +124,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/attendance': typeof AuthenticatedAttendanceRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/fees': typeof AuthenticatedFeesRoute
+  '/_authenticated/leave': typeof AuthenticatedLeaveRoute
   '/_authenticated/more': typeof AuthenticatedMoreRoute
   '/_authenticated/payroll': typeof AuthenticatedPayrollRoute
   '/_authenticated/staff/$staffId': typeof AuthenticatedStaffStaffIdRoute
@@ -122,8 +140,10 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/attendance'
     | '/dashboard'
     | '/fees'
+    | '/leave'
     | '/more'
     | '/payroll'
     | '/staff/$staffId'
@@ -134,8 +154,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/attendance'
     | '/dashboard'
     | '/fees'
+    | '/leave'
     | '/more'
     | '/payroll'
     | '/staff/$staffId'
@@ -147,8 +169,10 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/attendance'
     | '/_authenticated/dashboard'
     | '/_authenticated/fees'
+    | '/_authenticated/leave'
     | '/_authenticated/more'
     | '/_authenticated/payroll'
     | '/_authenticated/staff/$staffId'
@@ -186,6 +210,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/attendance': {
+      id: '/_authenticated/attendance'
+      path: '/attendance'
+      fullPath: '/attendance'
+      preLoaderRoute: typeof AuthenticatedAttendanceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -198,6 +229,13 @@ declare module '@tanstack/react-router' {
       path: '/fees'
       fullPath: '/fees'
       preLoaderRoute: typeof AuthenticatedFeesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/leave': {
+      id: '/_authenticated/leave'
+      path: '/leave'
+      fullPath: '/leave'
+      preLoaderRoute: typeof AuthenticatedLeaveRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/more': {
@@ -246,8 +284,10 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAttendanceRoute: typeof AuthenticatedAttendanceRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFeesRoute: typeof AuthenticatedFeesRoute
+  AuthenticatedLeaveRoute: typeof AuthenticatedLeaveRoute
   AuthenticatedMoreRoute: typeof AuthenticatedMoreRoute
   AuthenticatedPayrollRoute: typeof AuthenticatedPayrollRoute
   AuthenticatedStaffStaffIdRoute: typeof AuthenticatedStaffStaffIdRoute
@@ -257,8 +297,10 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAttendanceRoute: AuthenticatedAttendanceRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFeesRoute: AuthenticatedFeesRoute,
+  AuthenticatedLeaveRoute: AuthenticatedLeaveRoute,
   AuthenticatedMoreRoute: AuthenticatedMoreRoute,
   AuthenticatedPayrollRoute: AuthenticatedPayrollRoute,
   AuthenticatedStaffStaffIdRoute: AuthenticatedStaffStaffIdRoute,
