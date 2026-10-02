@@ -47,8 +47,16 @@ function StaffPage() {
   });
 
   const fetchStaff = useServerFn(getStaffList);
-  const { data } = useSuspenseQuery(queryOptions({ queryKey: ["staffList", q], queryFn: () => fetchStaff({ data: { q } }) }));
-  const staff = (data as any[]) ?? [];
+  const { data } = useSuspenseQuery(queryOptions({ queryKey: ["staffList"], queryFn: () => fetchStaff() }));
+  const allStaff = (data as any[]) ?? [];
+  const staff = q
+    ? allStaff.filter(
+        (s) =>
+          s.name?.toLowerCase().includes(q.toLowerCase()) ||
+          (s.designation ?? "").toLowerCase().includes(q.toLowerCase()) ||
+          (s.staff_code ?? "").toLowerCase().includes(q.toLowerCase())
+      )
+    : allStaff;
 
   const mut = useCreateStaff(() => setOpen(false), setError);
 
@@ -165,7 +173,16 @@ function StaffPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button disabled={!form.name || !form.monthly_salary || mut.isPending} onClick={() => mut.mutate()}>
+            <Button disabled={!form.name || !form.monthly_salary || mut.isPending} onClick={() => mut.mutate({
+              name: form.name,
+              staff_code: form.staff_code || "STF-" + Date.now().toString().slice(-6),
+              designation: form.designation || null,
+              department: form.department || null,
+              contact: form.contact || null,
+              joining_date: form.joining_date || null,
+              monthly_salary: Number(form.monthly_salary || 0),
+              payment_type: form.payment_type,
+            })}>
               {mut.isPending ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
