@@ -69,7 +69,7 @@ function MaintenancePage() {
       setError(null);
       qc.invalidateQueries({ queryKey: ["maintenance"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-sc      },
+    },
     onError: (e: any) => setError(e.message),
   });
 

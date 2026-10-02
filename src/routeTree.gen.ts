@@ -16,8 +16,10 @@ import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authentic
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFeesRouteImport } from './routes/_authenticated/fees'
 import { Route as AuthenticatedLeaveRouteImport } from './routes/_authenticated/leave'
+import { Route as AuthenticatedMaintenanceRouteImport } from './routes/_authenticated/maintenance'
 import { Route as AuthenticatedMoreRouteImport } from './routes/_authenticated/more'
 import { Route as AuthenticatedPayrollRouteImport } from './routes/_authenticated/payroll'
+import { Route as AuthenticatedTransportRouteImport } from './routes/_authenticated/transport'
 import { Route as AuthenticatedStaffIndexRouteImport } from './routes/_authenticated/staff.index'
 import { Route as AuthenticatedStaffStaffIdRouteImport } from './routes/_authenticated/staff.$staffId'
 import { Route as AuthenticatedStudentsIndexRouteImport } from './routes/_authenticated/students.index'
@@ -57,6 +59,12 @@ const AuthenticatedLeaveRoute = AuthenticatedLeaveRouteImport.update({
   path: '/leave',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMaintenanceRoute =
+  AuthenticatedMaintenanceRouteImport.update({
+    id: '/maintenance',
+    path: '/maintenance',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMoreRoute = AuthenticatedMoreRouteImport.update({
   id: '/more',
   path: '/more',
@@ -65,6 +73,11 @@ const AuthenticatedMoreRoute = AuthenticatedMoreRouteImport.update({
 const AuthenticatedPayrollRoute = AuthenticatedPayrollRouteImport.update({
   id: '/payroll',
   path: '/payroll',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTransportRoute = AuthenticatedTransportRouteImport.update({
+  id: '/transport',
+  path: '/transport',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedStaffIndexRoute = AuthenticatedStaffIndexRouteImport.update({
@@ -98,8 +111,10 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/fees': typeof AuthenticatedFeesRoute
   '/leave': typeof AuthenticatedLeaveRoute
+  '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/more': typeof AuthenticatedMoreRoute
   '/payroll': typeof AuthenticatedPayrollRoute
+  '/transport': typeof AuthenticatedTransportRoute
   '/staff/$staffId': typeof AuthenticatedStaffStaffIdRoute
   '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
   '/staff/': typeof AuthenticatedStaffIndexRoute
@@ -112,8 +127,10 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/fees': typeof AuthenticatedFeesRoute
   '/leave': typeof AuthenticatedLeaveRoute
+  '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/more': typeof AuthenticatedMoreRoute
   '/payroll': typeof AuthenticatedPayrollRoute
+  '/transport': typeof AuthenticatedTransportRoute
   '/staff/$staffId': typeof AuthenticatedStaffStaffIdRoute
   '/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
   '/staff': typeof AuthenticatedStaffIndexRoute
@@ -128,8 +145,10 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/fees': typeof AuthenticatedFeesRoute
   '/_authenticated/leave': typeof AuthenticatedLeaveRoute
+  '/_authenticated/maintenance': typeof AuthenticatedMaintenanceRoute
   '/_authenticated/more': typeof AuthenticatedMoreRoute
   '/_authenticated/payroll': typeof AuthenticatedPayrollRoute
+  '/_authenticated/transport': typeof AuthenticatedTransportRoute
   '/_authenticated/staff/$staffId': typeof AuthenticatedStaffStaffIdRoute
   '/_authenticated/students/$studentId': typeof AuthenticatedStudentsStudentIdRoute
   '/_authenticated/staff/': typeof AuthenticatedStaffIndexRoute
@@ -144,8 +163,10 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/fees'
     | '/leave'
+    | '/maintenance'
     | '/more'
     | '/payroll'
+    | '/transport'
     | '/staff/$staffId'
     | '/students/$studentId'
     | '/staff/'
@@ -158,8 +179,10 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/fees'
     | '/leave'
+    | '/maintenance'
     | '/more'
     | '/payroll'
+    | '/transport'
     | '/staff/$staffId'
     | '/students/$studentId'
     | '/staff'
@@ -173,8 +196,10 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/fees'
     | '/_authenticated/leave'
+    | '/_authenticated/maintenance'
     | '/_authenticated/more'
     | '/_authenticated/payroll'
+    | '/_authenticated/transport'
     | '/_authenticated/staff/$staffId'
     | '/_authenticated/students/$studentId'
     | '/_authenticated/staff/'
@@ -238,6 +263,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeaveRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/maintenance': {
+      id: '/_authenticated/maintenance'
+      path: '/maintenance'
+      fullPath: '/maintenance'
+      preLoaderRoute: typeof AuthenticatedMaintenanceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/more': {
       id: '/_authenticated/more'
       path: '/more'
@@ -250,6 +282,13 @@ declare module '@tanstack/react-router' {
       path: '/payroll'
       fullPath: '/payroll'
       preLoaderRoute: typeof AuthenticatedPayrollRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/transport': {
+      id: '/_authenticated/transport'
+      path: '/transport'
+      fullPath: '/transport'
+      preLoaderRoute: typeof AuthenticatedTransportRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/staff/': {
@@ -288,8 +327,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFeesRoute: typeof AuthenticatedFeesRoute
   AuthenticatedLeaveRoute: typeof AuthenticatedLeaveRoute
+  AuthenticatedMaintenanceRoute: typeof AuthenticatedMaintenanceRoute
   AuthenticatedMoreRoute: typeof AuthenticatedMoreRoute
   AuthenticatedPayrollRoute: typeof AuthenticatedPayrollRoute
+  AuthenticatedTransportRoute: typeof AuthenticatedTransportRoute
   AuthenticatedStaffStaffIdRoute: typeof AuthenticatedStaffStaffIdRoute
   AuthenticatedStudentsStudentIdRoute: typeof AuthenticatedStudentsStudentIdRoute
   AuthenticatedStaffIndexRoute: typeof AuthenticatedStaffIndexRoute
@@ -301,8 +342,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFeesRoute: AuthenticatedFeesRoute,
   AuthenticatedLeaveRoute: AuthenticatedLeaveRoute,
+  AuthenticatedMaintenanceRoute: AuthenticatedMaintenanceRoute,
   AuthenticatedMoreRoute: AuthenticatedMoreRoute,
   AuthenticatedPayrollRoute: AuthenticatedPayrollRoute,
+  AuthenticatedTransportRoute: AuthenticatedTransportRoute,
   AuthenticatedStaffStaffIdRoute: AuthenticatedStaffStaffIdRoute,
   AuthenticatedStudentsStudentIdRoute: AuthenticatedStudentsStudentIdRoute,
   AuthenticatedStaffIndexRoute: AuthenticatedStaffIndexRoute,
