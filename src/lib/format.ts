@@ -27,7 +27,15 @@ export const toCSV = (headers: string[], rows: (string | number | null | undefin
   return [headers.map(esc).join(","), ...rows.map((r) => r.map(esc).join(","))].join("\n");
 };
 
-export const downloadCSV = (filename: string, csv: string) => {
+export const downloadCSV = (
+  filename: string,
+  data: string | (string | number | null | undefined)[][]
+) => {
+  const esc = (v: string | number | null | undefined) => {
+    const s = v == null ? "" : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const csv = typeof data === "string" ? data : data.map((r) => r.map(esc).join(",")).join("\n");
   const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

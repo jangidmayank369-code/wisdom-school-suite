@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { getPayrollMonth, savePayroll } from "@/lib/erp.functions";
 import { useErp } from "@/components/erp/AppShell";
-import { Card, PageHeader, SectionTitle, StatusBadge } from "@/components/erp/parts";
+import { Card, PageHeader, SectionTitle } from "@/components/erp/parts";
 import { Button } from "@/components/ui/button";
 import { fmtMoney, todayISO } from "@/lib/format";
 
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_authenticated/payroll")({
 });
 
 function PayrollPage() {
-  const { activeSession } = useErp();
+  const { activeSession, isFinance } = useErp();
   const [month, setMonth] = useState(todayISO().slice(0, 7));
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -23,14 +23,26 @@ function PayrollPage() {
   const { data } = useSuspenseQuery(
     queryOptions({
       queryKey: ["payrollMonth", activeSession?.id, month],
-      queryFn: () => fetchMonth({ data: { sessionId: activeSession?.id, month } }),
+      queryFn: () => fetchMonth({ data: { sessionId: activeSession?.id, month: month + "-01" } }),
     })
   );
+  const rows = (data as any[]) ?? [];
 
   const fetchSave = useServerFn(savePayroll);
   const mut = useMutation({
-    mutationFn: (payload: { staff_id: string; paid_days: number }) =>
-      fetchSave({ data: { ...payload, month: month + "-01", session_id: activeSession?.id ?? null } }),
+    mutationFn: (payload: {
+      staff_id: string;
+      working_days: number;
+      paid_days: number;
+      computed_salary: number;
+    }) =>
+      fetchSave({
+        data: {
+          ...payload,
+          period_month: month + "-01",
+          session_id: activeSession?.id ?? null,
+        },
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["payrollMonth"] });
       setError(null);
@@ -39,13 +51,17 @@ function PayrollPage() {
     onSettled: () => setSavingId(null),
   });
 
-  const totals = (data as any[]).reduce(
-    (a, r) => ({
-      gross: a.gross + r.monthly_salary,
-      computed: a.computed + (r.saved_computed ?? r.computed),
-      paid: a.paid + r.paid_amount,
-      due: a.due + r.due,
-    }),
+  const totals = rows.reduce(
+    (a, r) => {
+      const computed = r.saved ? Number(r.saved.computed_salary) : r.computed;
+      const due = Math.max(0, computed - Number(r.paidMonth ?? 0));
+      return {
+        gross: a.gross + Number(r.staff.monthly_salary),
+        computed: a.computed + computed,
+        paid: a.paid + Number(r.paidMonth ?? 0),
+        due: a.due + due,
+      };
+    },
     { gross: 0, computed: 0, paid: 0, due: 0 }
   );
 
@@ -56,87 +72,96 @@ function PayrollPage() {
       <div className="mb-4 flex items-end gap-2">
         <div className="flex-1 space-y-1">
           <label className="text-xs text-muted-foreground">Month</label>
-          <Input2 value={month} onChange={setMonth} />
+          <MonthInput value={month} onChange={setMonth} />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
         <SumBox label="Gross salary" value={fmtMoney(totals.gross)} />
-        <SumBox label="Computed (saved)" value={fmtMoney(totals.computed)} />
+        <SumBox label="Computed salary" value={fmtMoney(totals.computed)} />
         <SumBox label="Paid this month" value={fmtMoney(totals.paid)} />
         <SumBox label="Due" value={fmtMoney(totals.due)} />
       </div>
 
       <SectionTitle>Staff payroll</SectionTitle>
       <div className="space-y-2.5">
-        {(data as any[]).map((r) => (
-          <Card key={r.staff_id} className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">{r.name}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {r.designation ?? ""} · {fmtMoney(r.monthly_salary)}/mo · {fmtMoney(r.daily_rate)}/day
-                </p>
+        {rows.length === 0 && <Card className="p-4 text-sm text-muted-foreground">No active staff.</Card>}
+        {rows.map((r: any) => {
+          const computed = r.saved ? Number(r.saved.computed_salary) : r.computed;
+          const paidDays = r.saved ? Number(r.saved.paid_days) : r.paidDays;
+          const due = Math.max(0, computed - Number(r.paidMonth ?? 0));
+          return (
+            <Card key={r.staff.id} className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold">{r.staff.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {r.staff.designation ?? ""} · {fmtMoney(r.staff.monthly_salary)}/mo · {fmtMoney(r.daily)}/day
+                  </p>
+                </div>
               </div>
-              <StatusBadge status={r.archived ? "archived" : r.status} />
-            </div>
 
-            <div className="mt-3 grid grid-cols-4 gap-2 text-center text-xs">
-              <Box label="Present" value={r.present} tone="text-emerald-600" />
-              <Box label="Absent" value={r.absent} tone={r.absent > 4 ? "text-destructive" : undefined} />
-              <Box label="Half days" value={r.half_day} />
-              <Box label="Approved leave" value={r.on_leave} />
-            </div>
-
-            {r.absent > 4 && (
-              <p className="mt-2 rounded-lg bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-700">
-                Warning: {r.absent} absences this month — review before saving. No deduction is applied automatically.
-              </p>
-            )}
-
-            <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-muted/50 px-3 py-2">
-              <div className="text-xs">
-                <p className="text-muted-foreground">Paid days</p>
-                <p className="text-base font-bold tabular-nums">
-                  {r.saved_paid_days ?? r.paid_days}
-                </p>
+              <div className="mt-3 grid grid-cols-4 gap-2 text-center text-xs">
+                <Box label="Present" value={r.present} tone="text-emerald-600" />
+                <Box label="Absent" value={r.absent} tone={r.absent > 4 ? "text-destructive" : undefined} />
+                <Box label="Half days" value={r.half} />
+                <Box label="Leave" value={r.leave} />
               </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">{r.saved_computed != null ? "Saved salary" : "Computed salary"}</p>
-                <p className="text-base font-bold tabular-nums">
-                  {fmtMoney(r.saved_computed ?? r.computed)}
+
+              {r.warning && (
+                <p className="mt-2 rounded-lg bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-700">
+                  Warning: {r.absent} absences this month — review before saving. No deduction is applied automatically.
                 </p>
-              </div>
-              {r.saved_computed == null && (
-                <Button
-                  size="sm"
-                  disabled={mut.isPending}
-                  onClick={() => {
-                    setSavingId(r.staff_id);
-                    mut.mutate({ staff_id: r.staff_id, paid_days: r.paid_days });
-                  }}
-                >
-                  {savingId === r.staff_id ? "Saving…" : "Save"}
-                </Button>
               )}
-            </div>
 
-            <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-              <span>Paid: {fmtMoney(r.paid_amount)}</span>
-              <span className={(r.due > 0.009 ? "text-destructive" : "text-emerald-600") + " font-medium"}>
-                Due: {fmtMoney(r.due)}
-              </span>
-            </div>
-          </Card>
-        ))}
+              <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-muted/50 px-3 py-2">
+                <div className="text-xs">
+                  <p className="text-muted-foreground">Paid days</p>
+                  <p className="text-base font-bold tabular-nums">{paidDays}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground">{r.saved ? "Saved salary (locked)" : "Computed salary"}</p>
+                  <p className="text-base font-bold tabular-nums">{fmtMoney(computed)}</p>
+                </div>
+                {!r.saved && isFinance && (
+                  <Button
+                    size="sm"
+                    disabled={mut.isPending}
+                    onClick={() => {
+                      setSavingId(r.staff.id);
+                      mut.mutate({
+                        staff_id: r.staff.id,
+                        working_days: r.workingDays,
+                        paid_days: r.paidDays,
+                        computed_salary: r.computed,
+                      });
+                    }}
+                  >
+                    {savingId === r.staff.id ? "Saving…" : "Save"}
+                  </Button>
+                )}
+              </div>
+
+              <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+                <span>Paid: {fmtMoney(r.paidMonth ?? 0)}</span>
+                <span className={(due > 0.009 ? "text-destructive" : "text-emerald-600") + " font-medium"}>
+                  Due: {fmtMoney(due)}
+                </span>
+              </div>
+            </Card>
+          );
+        })}
       </div>
 
       {error && <p className="mt-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+      {!isFinance && (
+        <p className="mt-3 text-center text-xs text-muted-foreground">Only Admin and Accountant can save payroll.</p>
+      )}
     </div>
   );
 }
 
-function Input2({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function MonthInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <input
       type="month"
@@ -156,7 +181,7 @@ function SumBox({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Box({ label, value, tone }: { label: string; value: number; tone?: string }) {
+function Box({ label, value, tone }: { label: string; value: number; tone?: string | undefined }) {
   return (
     <div className="rounded-lg bg-muted/50 py-1.5">
       <p className="text-[10px] text-muted-foreground">{label}</p>

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { getAttendanceDay, getMyAttendance, markAttendance } from "@/lib/erp.functions";
@@ -19,32 +19,30 @@ const STATUSES = [
   { value: "leave", label: "L" },
 ];
 
+const LABELS: Record<string, string> = { present: "Present", absent: "Absent", half_day: "Half days", leave: "Leaves" };
+
 function AttendancePage() {
-  const { activeSession, isAdmin, role } = useErp();
+  const { isAdmin } = useErp();
+  return isAdmin ? <AdminAttendance /> : <MyAttendance />;
+}
+
+function AdminAttendance() {
   const [date, setDate] = useState(todayISO());
   const qc = useQueryClient();
 
   const fetchDay = useServerFn(getAttendanceDay);
   const { data } = useSuspenseQuery(
     queryOptions({
-      queryKey: ["attendanceDay", activeSession?.id, date],
-      queryFn: () => fetchDay({ data: { sessionId: activeSession?.id, date } }),
-      enabled: isAdmin,
+      queryKey: ["attendanceDay", date],
+      queryFn: () => fetchDay({ data: { date } }),
     })
   );
-
-  const fetchMine = useServerFn(getMyAttendance);
-  const mine = useSuspenseQuery(
-    queryOptions({
-      queryKey: ["myAttendance", activeSession?.id, date],
-      queryFn: () => fetchMine({ data: { sessionId: activeSession?.id, date } }),
-    })
-  );
+  const rows = ((data as any)?.records ?? []) as { staff: any; record: any }[];
 
   const fetchMark = useServerFn(markAttendance);
   const mut = useMutation({
     mutationFn: (payload: { staff_id: string; status: string }) =>
-      fetchMark({ data: { ...payload, att_date: date, session_id: activeSession?.id ?? null } }),
+      fetchMark({ data: { ...payload, att_date: date } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["attendanceDay"] });
       qc.invalidateQueries({ queryKey: ["myAttendance"] });
@@ -52,73 +50,35 @@ function AttendancePage() {
     },
   });
 
-  if (!isAdmin) {
-    // Staff: read-only own attendance
-    const rows = (mine.data as any[]) ?? [];
-    const counts = rows.reduce<Record<string, number>>((acc, a) => {
-      acc[a.status] = (acc[a.status] ?? 0) + 1;
-      return acc;
-    }, {});
-    return (
-      <div>
-        <PageHeader title="My attendance" subtitle={activeSession ? activeSession.name : undefined} />
-        <div className="mb-4 grid grid-cols-4 gap-2 text-center">
-          {STATUSES.map((st) => (
-            <div key={st.value} className="rounded-xl border bg-card py-2">
-              <p className="text-lg font-bold tabular-nums">{counts[st.value] ?? 0}</p>
-              <p className="text-[10px] text-muted-foreground">{st.label === "½" ? "Half days" : st.label === "L" ? "Leaves" : st.label === "P" ? "Present" : "Absent"}</p>
-            </div>
-          ))}
-        </div>
-        <Card className="divide-y p-0">
-          {rows.length === 0 && <p className="p-4 text-sm text-muted-foreground">No attendance marked yet.</p>}
-          {rows
-            .slice()
-            .reverse()
-            .map((a) => (
-              <div key={a.id} className="flex items-center gap-3 px-4 py-2.5">
-                <span className="text-sm">{fmtDate(a.att_date)}</span>
-                <div className="flex-1" />
-                <StatusBadge status={a.status} />
-              </div>
-            ))}
-        </Card>
-      </div>
-    );
-  }
-
-  const rows = (data as any[]) ?? [];
-  const marked = rows.filter((r) => r.status).length;
+  const marked = rows.filter((r) => r.record).length;
 
   return (
     <div>
-      <PageHeader
-        title="Staff attendance"
-        subtitle={`${marked}/${rows.length} marked${role !== "admin" ? " · view only" : ""}`}
-      />
+      <PageHeader title="Staff attendance" subtitle={`${marked}/${rows.length} marked`} />
       <Input type="date" className="mb-4" value={date} onChange={(e) => setDate(e.target.value)} />
 
       <SectionTitle>Mark attendance</SectionTitle>
       <div className="space-y-2">
         {rows.length === 0 && <Card className="p-4 text-sm text-muted-foreground">No active staff.</Card>}
         {rows.map((r) => (
-          <Card key={r.staff_id} className="flex items-center gap-3 p-3">
+          <Card key={r.staff.id} className="flex items-center gap-3 p-3">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold">{r.name}</p>
-              {r.status && r.marked_by_name && (
+              <p className="truncate text-sm font-semibold">{r.staff.name}</p>
+              {r.record && (
                 <p className="truncate text-[11px] text-muted-foreground">
-                  {r.status.replace("_", " ")} · {r.marked_by_name}
+                  {String(r.record.status).replace("_", " ")}
+                  {r.record.marked_by_name ? ` · ${r.record.marked_by_name}` : ""}
                 </p>
               )}
             </div>
             <div className="flex gap-1.5">
               {STATUSES.map((st) => {
-                const active = r.status === st.value;
+                const active = r.record?.status === st.value;
                 return (
                   <button
                     key={st.value}
                     disabled={mut.isPending}
-                    onClick={() => mut.mutate({ staff_id: r.staff_id, status: st.value })}
+                    onClick={() => mut.mutate({ staff_id: r.staff.id, status: st.value })}
                     className={
                       "h-9 w-9 rounded-lg text-xs font-bold transition-colors disabled:opacity-50 " +
                       (active
@@ -140,9 +100,62 @@ function AttendancePage() {
           {(mut.error as Error).message}
         </p>
       )}
-      {role !== "admin" && (
-        <p className="mt-3 text-center text-xs text-muted-foreground">Only Admin can mark attendance.</p>
-      )}
+      {mut.isSuccess && <p className="mt-3 text-center text-xs text-emerald-600">Saved.</p>}
     </div>
+  );
+}
+
+function MyAttendance() {
+  const [month, setMonth] = useState(todayISO().slice(0, 7));
+
+  const fetchMine = useServerFn(getMyAttendance);
+  const { data } = useSuspenseQuery(
+    queryOptions({
+      queryKey: ["myAttendance", month],
+      queryFn: () => fetchMine({ data: { month } }),
+    })
+  );
+  const rows = ((data as any)?.records ?? []) as any[];
+  const counts = rows.reduce<Record<string, number>>((acc, a) => {
+    acc[a.status] = (acc[a.status] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  return (
+    <div>
+      <PageHeader title="My attendance" />
+      <div className="mb-4 flex items-end gap-2">
+        <div className="flex-1 space-y-1">
+          <label className="text-xs text-muted-foreground">Month</label>
+          <input
+            type="month"
+            value={month}
+            onChange={(e) => setMonth(e.target.value)}
+            className="border-input bg-background flex h-9 w-full rounded-lg border px-3 py-1 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+        </div>
+      </div>
+      <div className="mb-4 grid grid-cols-4 gap-2 text-center">
+        {STATUSES.map((st) => (
+          <div key={st.value} className="rounded-xl border bg-card py-2">
+            <p className="text-lg font-bold tabular-nums">{counts[st.value] ?? 0}</p>
+            <p className="text-[10px] text-muted-foreground">{LABELS[st.value]}</p>
+          </div>
+        ))}
+      </div>
+      <Card className="divide-y p-0">
+        {rows.length === 0 && <p className="p-4 text-sm text-muted-foreground">No attendance marked yet.</p>}
+        {rows
+          .slice()
+          .reverse()
+          .map((a) => (
+            <div key={a.id} className="flex items-center gap-3 px-4 py-2.5">
+              <span className="text-sm">{fmtDate(a.att_date)}</span>
+              <div className="flex-1" />
+              <StatusBadge status={a.status} />
+            </div>
+          ))}
+      </Card>
+</div>
   );
 }
