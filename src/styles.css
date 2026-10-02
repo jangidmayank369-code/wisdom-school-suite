@@ -142,3 +142,20 @@
     color: var(--color-foreground);
   }
 }
+
+/* Printing: show only the .print-area element (receipts) */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: fixed;
+    inset: 0;
+    background: white;
+    padding: 24px;
+  }
+}
