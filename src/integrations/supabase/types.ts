@@ -1070,6 +1070,7 @@ export type Database = {
         Returns: boolean
       }
       my_staff_id: { Args: never; Returns: string }
+      next_receipt_no: { Args: never; Returns: string }
     }
     Enums: {
       app_role: "admin" | "accountant" | "staff" | "teacher" | "viewer"
