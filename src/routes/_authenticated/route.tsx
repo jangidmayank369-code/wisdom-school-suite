@@ -1,9 +1,8 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { queryOptions } from "@tanstack/react-query";
-import { getBootstrap } from "@/lib/erp.functions";
-import { useServerFn } from "@tanstack/react-router";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { getBootstrap } from "@/lib/erp.functions";
 import { AppShell, type Bootstrap } from "@/components/erp/AppShell";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -15,15 +14,10 @@ export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
 });
 
-const bootstrapOptions = (fn: ReturnType<typeof useServerFn>) =>
-  queryOptions({ queryKey: ["bootstrap"], queryFn: fn });
-
 function AuthenticatedLayout() {
   const fetchBootstrap = useServerFn(getBootstrap);
-  const { data } = useSuspenseQuery(bootstrapOptions(fetchBootstrap));
-  return (
-    <AppShell bootstrap={data as Bootstrap}>
-      <Outlet />
-    </AppShell>
+  const { data } = useSuspenseQuery(
+    queryOptions({ queryKey: ["bootstrap"], queryFn: fetchBootstrap })
   );
+  return <AppShell bootstrap={data as Bootstrap}>{<Outlet />}</AppShell>;
 }
