@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { createUser, getMyModules, getUsers, setUserActive, setUserModules } from "@/lib/erp.functions";
-import { useErp, MODULES } from "@/components/erp/AppShell";
+import { createUser, getUsers, setUserActive, setUserModules } from "@/lib/erp.functions";
+import { MODULES, useErp } from "@/components/erp/AppShell";
 import { Card, PageHeader, SectionTitle } from "@/components/erp/parts";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -41,32 +41,30 @@ function UsersPage() {
       </div>
     );
   }
-  return <AdminUsers qc={qc} error={error} setError={setError} />;
+  return <AdminUsers qc={qc} setError={setError} />;
 }
 
 function AdminUsers({
   qc,
-  error,
   setError,
 }: {
   qc: ReturnType<typeof useQueryClient>;
-  error: string | null;
   setError: (e: string | null) => void;
 }) {
   const fetchU = useServerFn(getUsers);
   const { data } = useSuspenseQuery(queryOptions({ queryKey: ["users"], queryFn: () => fetchU() }));
-  const users = (data as any[]) ?? [];
+  const users = ((data as any)?.users ?? []) as any[];
 
   const fetchActive = useServerFn(setUserActive);
   const activeMut = useMutation({
-    mutationFn: (p: { id: string; active: boolean }) => fetchActive({ data: p }),
+    mutationFn: (p: { userId: string; active: boolean }) => fetchActive({ data: p }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
     onError: (e: any) => setError(e.message),
   });
 
   const fetchMods = useServerFn(setUserModules);
   const modsMut = useMutation({
-    mutationFn: (p: { id: string; modules: string[] }) => fetchMods({ data: p }),
+    mutationFn: (p: { userId: string; modules: string[] }) => fetchMods({ data: p }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["users"] });
       setError(null);
@@ -89,8 +87,7 @@ function AdminUsers({
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ full_name: "", email: "", password: "", role: "staff", modules: [] as string[] });
 
-  const staffRole = (u: any) => u.user_roles?.[0]?.role ?? "staff";
-  const modsOf = (u: any) => (u.user_modules ?? []).map((m: any) => m.module);
+  const roleOf = (u: any) => (u.roles?.[0] as string) ?? "staff";
 
   return (
     <div>
@@ -102,8 +99,8 @@ function AdminUsers({
       <SectionTitle>All users</SectionTitle>
       <div className="space-y-2.5">
         {users.map((u) => {
-          const role = staffRole(u);
-          const mods = modsOf(u);
+          const role = roleOf(u);
+          const mods: string[] = u.modules ?? [];
           return (
             <Card key={u.id} className="p-4">
               <div className="flex items-center gap-3">
@@ -132,13 +129,13 @@ function AdminUsers({
                     Allowed modules (staff can only open these)
                   </p>
                   <div className="flex flex-wrap gap-x-4 gap-y-2">
-                    {MODULES.filter((m) => m.module !== "users" && m.module !== "sessions").map((m) => (
+                    {MODULES.map((m) => (
                       <label key={m.module} className="flex items-center gap-1.5 text-xs">
                         <Checkbox
                           checked={mods.includes(m.module)}
                           onCheckedChange={(v) => {
                             const next = v ? [...mods, m.module] : mods.filter((x) => x !== m.module);
-                            modsMut.mutate({ id: u.id, modules: next });
+                            modsMut.mutate({ userId: u.id, modules: next });
                           }}
                         />
                         {m.label}
@@ -153,7 +150,7 @@ function AdminUsers({
                   size="sm"
                   variant={u.active ? "outline" : "default"}
                   disabled={activeMut.isPending}
-                  onClick={() => activeMut.mutate({ id: u.id, active: !u.active })}
+                  onClick={() => activeMut.mutate({ userId: u.id, active: !u.active })}
                 >
                   {u.active ? "Disable account" : "Enable account"}
                 </Button>
@@ -178,7 +175,7 @@ function AdminUsers({
               <Input inputMode="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <Label>Temporary password * (min 6 chars)</Label>
+              <Label>Temporary password * (min 8 chars)</Label>
               <Input value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
             </div>
             <div className="space-y-1.5">
@@ -196,7 +193,7 @@ function AdminUsers({
               <div className="space-y-1.5">
                 <Label>Modules</Label>
                 <div className="flex flex-wrap gap-x-4 gap-y-2">
-                  {MODULES.filter((m) => m.module !== "users" && m.module !== "sessions").map((m) => (
+                  {MODULES.map((m) => (
                     <label key={m.module} className="flex items-center gap-1.5 text-xs">
                       <Checkbox
                         checked={form.modules.includes(m.module)}
@@ -217,7 +214,7 @@ function AdminUsers({
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button
-              disabled={!form.full_name || !form.email || form.password.length < 6 || createMut.isPending}
+              disabled={!form.full_name || !form.email || form.password.length < 8 || createMut.isPending}
               onClick={() =>
                 createMut.mutate({
                   full_name: form.full_name,
@@ -236,6 +233,3 @@ function AdminUsers({
     </div>
   );
 }
-
-// keep getMyModules referenced for potential future use
-void getMyModules;

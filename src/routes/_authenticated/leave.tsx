@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { getLeaveRequests, reviewLeave, submitLeave } from "@/lib/erp.functions";
@@ -22,16 +22,11 @@ export const Route = createFileRoute("/_authenticated/leave")({
 });
 
 function LeavePage() {
-  const { activeSession, isAdmin } = useErp();
+  const { isAdmin } = useErp();
   const qc = useQueryClient();
 
   const fetchLeaves = useServerFn(getLeaveRequests);
-  const { data } = useSuspenseQuery(
-    queryOptions({
-      queryKey: ["leaves", activeSession?.id],
-      queryFn: () => fetchLeaves({ data: { sessionId: activeSession?.id } }),
-    })
-  );
+  const { data } = useSuspenseQuery(queryOptions({ queryKey: ["leaves"], queryFn: () => fetchLeaves() }));
   const leaves = (data as any[]) ?? [];
   const pending = leaves.filter((l) => l.status === "pending");
 
@@ -45,7 +40,7 @@ function LeavePage() {
   const fetchSubmit = useServerFn(submitLeave);
   const subMut = useMutation({
     mutationFn: () =>
-      fetchSubmit({ data: { from_date: from, to_date: to, reason, remarks: remarks || null, session_id: activeSession?.id ?? null } }),
+      fetchSubmit({ data: { from_date: from, to_date: to, reason, remarks: remarks || null } }),
     onSuccess: () => {
       setOpen(false);
       setReason("");
