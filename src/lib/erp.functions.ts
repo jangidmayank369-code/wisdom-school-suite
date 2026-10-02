@@ -986,3 +986,67 @@ export const getFeeCategories = createServerFn({ method: "GET" })
     if (error) throw error;
     return data ?? [];
   });
+
+// ---------- Fee reports ----------
+
+export const getPendingFees = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ sessionId: z.string().uuid().optional() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const s = context.supabase;
+    let studentQ = s
+      .from("students")
+      .select("id, admission_no, sr_number, name, class_name, section")
+      .eq("archived", false)
+      .order("class_name")
+      .order("name");
+    let chargeQ = s.from("student_charges").select("student_id, amount");
+    let payQ = s.from("fee_payments").select("student_id, amount").eq("voided", false);
+    if (data.sessionId) {
+      studentQ = studentQ.eq("session_id", data.sessionId);
+      chargeQ = chargeQ.eq("session_id", data.sessionId);
+      payQ = payQ.eq("session_id", data.sessionId);
+    }
+    const [students, charges, pays] = await Promise.all([studentQ, chargeQ, payQ]);
+    if (students.error) throw students.error;
+    const chBy = new Map<string, number>();
+    for (const c of charges.data ?? []) chBy.set(c.student_id, (chBy.get(c.student_id) ?? 0) + Number(c.amount));
+    const payBy = new Map<string, number>();
+    for (const p of pays.data ?? []) payBy.set(p.student_id, (payBy.get(p.student_id) ?? 0) + Number(p.amount));
+    const rows = (students.data ?? [])
+      .map((st: any) => {
+        const charges = chBy.get(st.id) ?? 0;
+        const paid = payBy.get(st.id) ?? 0;
+        return { ...st, charges, paid, balance: charges - paid };
+      })
+      .filter((r) => r.balance > 0.009);
+    return {
+      rows,
+      totalCharges: rows.reduce((a, r) => a + r.charges, 0),
+      totalPaid: rows.reduce((a, r) => a + r.paid, 0),
+      totalPending: rows.reduce((a, r) => a + r.balance, 0),
+    };
+  });
+
+export const getFeePaymentsList = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({ sessionId: z.string().uuid().optional(), from: z.string().optional(), to: z.string().optional() })
+      .parse(d)
+  )
+  .handler(async ({ context, data }) => {
+    const s = context.supabase;
+    let q = s
+      .from("fee_payments")
+      .select("*, students(name, admission_no, class_name, section)")
+      .order("payment_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(400);
+    if (data.sessionId) q = q.eq("session_id", data.sessionId);
+    if (data.from) q = q.gte("payment_date", data.from);
+    if (data.to) q = q.lte("payment_date", data.to);
+    const { data: rows, error } = await q;
+    if (error) throw error;
+    return rows ?? [];
+  });
