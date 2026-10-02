@@ -29,8 +29,8 @@ export function StatCard({
 }: {
   label: string;
   value: string;
-  hint?: string;
-  tone?: "default" | "success" | "warning" | "danger" | "primary";
+  hint?: string | undefined;
+  tone?: "default" | "success" | "warning" | "danger" | "primary" | undefined;
 }) {
   const tones: Record<string, string> = {
     default: "text-foreground",

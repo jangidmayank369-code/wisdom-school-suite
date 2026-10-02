@@ -415,4 +415,3 @@ export function AppShell({ bootstrap, children }: { bootstrap: Bootstrap; childr
   );
 }
 
-export { MORE_LINKS, MODULES };
