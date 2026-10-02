@@ -20,6 +20,7 @@ export type SessionRow = {
 };
 
 export type Bootstrap = {
+  userId: string;
   sessions: SessionRow[];
   settings: { school_name: string; currency: string } | null;
   profile: { full_name: string; username: string | null; active: boolean } | null;
@@ -31,6 +32,9 @@ export type Bootstrap = {
 
 type ErpCtx = {
   bootstrap: Bootstrap;
+  profile: Bootstrap["profile"];
+  role: "admin" | "accountant" | "staff";
+  userId: string;
   isAdmin: boolean;
   isFinance: boolean;
   isStaffOnly: boolean;
@@ -190,7 +194,52 @@ const NAV: { to: string; label: string; module: string; icon: ReactNode }[] = [
   },
 ];
 
-const MORE_LINKS = NAV.filter((n) => !["dashboard", "students", "fees", "staff"].includes(n.module));
+const MODULE_LABELS: Record<string, string> = {
+  dashboard: "Dashboard",
+  sessions: "Sessions",
+  students: "Students",
+  fees: "Fees",
+  staff: "Staff & Payroll",
+  attendance: "Attendance",
+  leave: "Leave",
+  transport: "Transport",
+  maintenance: "Maintenance",
+  accounts: "Accounts",
+  reports: "Reports",
+};
+
+const MODULE_DESCS: Record<string, string> = {
+  dashboard: "School-wide collection, expenses and recent activity",
+  sessions: "Create academic sessions and set the active one",
+  students: "Admissions, student profiles and fee status",
+  fees: "Fee collection, receipts and pending dues",
+  staff: "Staff profiles, salary payments and monthly payroll",
+  attendance: "Mark and review daily staff attendance",
+  leave: "Apply for leave and review requests",
+  transport: "Vehicles, routes, driver KM and transport expenses",
+  maintenance: "School maintenance work and expenses",
+  accounts: "Central income and expense ledger",
+  reports: "Exportable reports across all modules",
+};
+
+export const MODULES: { module: string; label: string; desc: string }[] = [
+  "dashboard",
+  "students",
+  "fees",
+  "staff",
+  "payroll",
+  "attendance",
+  "leave",
+  "transport",
+  "maintenance",
+  "accounts",
+  "reports",
+  "sessions",
+].map((m) => ({
+  module: m,
+  label: MODULE_LABELS[m] ?? m,
+  desc: MODULE_DESCS[m] ?? "",
+}));
 
 const BottomIcon = ({ children, active }: { children: ReactNode; active: boolean }) => (
   <span className={active ? "text-primary" : "text-muted-foreground"}>{children}</span>
