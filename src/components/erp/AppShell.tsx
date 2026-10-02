@@ -241,6 +241,13 @@ export const MODULES: { module: string; label: string; desc: string }[] = [
   desc: MODULE_DESCS[m] ?? "",
 }));
 
+const MORE_LINKS = NAV.filter((n) => !["dashboard", "students", "fees", "staff"].includes(n.module)).map((n) => ({
+  to: n.to,
+  label: n.label,
+  module: n.module,
+  desc: MODULE_DESCS[n.module] ?? "",
+}));
+
 const BottomIcon = ({ children, active }: { children: ReactNode; active: boolean }) => (
   <span className={active ? "text-primary" : "text-muted-foreground"}>{children}</span>
 );
