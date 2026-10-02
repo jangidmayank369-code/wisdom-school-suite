@@ -30,6 +30,7 @@ export const getBootstrap = createServerFn({ method: "GET" })
     ]);
     if (sessions.error) throw sessions.error;
     return {
+      userId: uid,
       sessions: sessions.data ?? [],
       settings: settings.data,
       profile: profile.data,
@@ -689,7 +690,7 @@ export const getTransport = createServerFn({ method: "GET" })
     const s = context.supabase;
     const [vehicles, expenses, km, drivers] = await Promise.all([
       s.from("vehicles").select("*").order("vehicle_number"),
-      s.from("transport_expenses").select("*").order("expense_date", { ascending: false }).limit(200),
+      s.from("transport_expenses").select("*, vehicles(vehicle_number)").order("expense_date", { ascending: false }).limit(200),
       s.from("driver_km_logs").select("*, staff(name), vehicles(vehicle_number, route_name)").order("log_date", { ascending: false }).limit(200),
       s.from("staff").select("id, name, designation, monthly_salary").eq("status", "active").ilike("designation", "%driver%"),
     ]);
@@ -865,6 +866,17 @@ export const addManualTransaction = createServerFn({ method: "POST" })
   });
 
 // ---------- Sessions ----------
+
+export const getSessions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("academic_sessions")
+      .select("*")
+      .order("name", { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  });
 
 export const createSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

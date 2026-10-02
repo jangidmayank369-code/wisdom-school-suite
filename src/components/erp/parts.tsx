@@ -7,8 +7,8 @@ export function PageHeader({
   action,
 }: {
   title: string;
-  subtitle?: string;
-  action?: ReactNode;
+  subtitle?: string | undefined;
+  action?: ReactNode | undefined;
 }) {
   return (
     <div className="mb-4 flex items-start justify-between gap-3">
@@ -48,8 +48,8 @@ export function StatCard({
   );
 }
 
-export function MoneyStat(props: { label: string; value: number | string; hint?: string; tone?: "default" | "success" | "warning" | "danger" | "primary" }) {
-  return <StatCard {...props} value={fmtMoney(props.value)} />;
+export function MoneyStat(props: { label: string; value: number | string; hint?: string | undefined; tone?: "default" | "success" | "warning" | "danger" | "primary" | undefined; plain?: boolean | undefined }) {
+  return <StatCard {...props} value={props.plain ? String(props.value) : fmtMoney(props.value)} />;
 }
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
