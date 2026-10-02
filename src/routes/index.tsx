@@ -1,24 +1,23 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      throw redirect({ to: data.session ? "/dashboard" : "/auth" });
+    });
+  }, []);
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="text-center">
+        <div className="mx-auto mb-4 h-12 w-12 animate-pulse rounded-full bg-primary/15" />
+        <p className="text-sm text-muted-foreground">Loading Wisdom Public School ERP…</p>
+      </div>
     </div>
   );
 }
