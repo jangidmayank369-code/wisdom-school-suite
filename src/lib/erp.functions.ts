@@ -803,7 +803,7 @@ export const addMaintenance = createServerFn({ method: "POST" })
       .parse(d)
   )
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase.from("maintenance_expenses").insert({ ...data, voided: false });
+    const { error } = await context.supabase.from("maintenance_expenses").insert({ ...data, voided: false } as any);
     if (error) throw error;
     return { ok: true };
   });
@@ -859,7 +859,7 @@ export const addManualTransaction = createServerFn({ method: "POST" })
       .parse(d)
   )
   .handler(async ({ context, data }) => {
-    const { error } = await context.supabase.from("transactions").insert({ ...data, source: "manual", voided: false });
+    const { error } = await context.supabase.from("transactions").insert({ ...data, source: "manual", voided: false } as any);
     if (error) throw error;
     return { ok: true };
   });
@@ -874,7 +874,7 @@ export const createSession = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const s = context.supabase;
     if (!(await isAdmin(s, context.userId as string))) throw new Error("Only an Admin can create sessions.");
-    const { error } = await s.from("academic_sessions").insert({ ...data, is_active: false, archived: false });
+    const { error } = await s.from("academic_sessions").insert({ ...data, is_active: false, archived: false } as any);
     if (error) throw error;
     return { ok: true };
   });
