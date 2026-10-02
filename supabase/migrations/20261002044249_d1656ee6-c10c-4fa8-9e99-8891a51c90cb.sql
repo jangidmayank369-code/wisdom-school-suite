@@ -1,0 +1,25 @@
+REVOKE EXECUTE ON FUNCTION public.can_access(uuid, text[]) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.can_finance(uuid) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.can_manage_students(uuid) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.current_user_name() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.my_staff_id() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.next_receipt_no() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.payment_paid_by_lock() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.set_audit_fields() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.single_active_session() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.stamp_leave_review() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.stamp_marked_by() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.sync_fee_payment_txn() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.sync_maintenance_txn() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.sync_staff_payment_txn() FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.sync_transport_txn() FROM PUBLIC, anon;
+
+GRANT EXECUTE ON FUNCTION public.can_access(uuid, text[]) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.can_finance(uuid) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.can_manage_students(uuid) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.current_user_name() TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.my_staff_id() TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.next_receipt_no() TO authenticated, service_role;
