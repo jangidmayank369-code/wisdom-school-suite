@@ -245,6 +245,7 @@ const MORE_LINKS = NAV.filter((n) => !["dashboard", "students", "fees", "staff"]
   to: n.to,
   label: n.label,
   module: n.module,
+  icon: n.icon,
   desc: MODULE_DESCS[n.module] ?? "",
 }));
 

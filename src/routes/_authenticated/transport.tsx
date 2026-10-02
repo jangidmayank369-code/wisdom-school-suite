@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { addKmLog, addTransportExpense, createVehicle, getTransport } from "@/lib/erp.functions";
