@@ -133,7 +133,7 @@ function ReportsPage() {
   const exportMyAttendance = () => {
     downloadCSV(`report-my-attendance-${monthFrom}-to-${monthTo}.csv`, [
       ["Date", "Status", "Marked By", "Remarks"],
-      ...rows.map((a) => [a.att_date, a.status, a.marked_by_name ?? "", a.remarks ?? ""]),
+      ...attRows.map((a) => [a.att_date, a.status, a.marked_by_name ?? "", a.remarks ?? ""]),
     ]);
   };
 
@@ -189,7 +189,7 @@ function ReportsPage() {
               title="Income & expense summary"
               desc={
                 tx.data
-                  ? `${((tx.data as any[]) ?? []).filter((t) => !t.voided).length} transactions in range`
+                  ? `${(((tx.data as any)?.rows ?? []) as any[]).filter((t) => !t.voided).length} transactions in range`
                   : "Loading…"
               }
               onExport={exportIncomeExpense}
@@ -211,7 +211,7 @@ function ReportsPage() {
         </>
       )}
 
-      {(role === "staff" || att.data) && (
+      {(role === "staff" || attRows.length > 0) && (
         <>
           <SectionTitle>My attendance</SectionTitle>
           <div className="grid gap-2.5 md:grid-cols-2">
