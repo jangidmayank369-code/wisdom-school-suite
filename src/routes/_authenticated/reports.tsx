@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/reports")({
 });
 
 function ReportsPage() {
-  const { activeSession, role, can, userId, isFinance } = useErp();
+  const { activeSession, role, can, isFinance } = useErp();
   const today = todayISO();
   const [monthFrom, setMonthFrom] = useState(today.slice(0, 8) + "01");
   const [monthTo, setMonthTo] = useState(today);
@@ -42,7 +42,7 @@ function ReportsPage() {
   const fetchPay = useServerFn(getPayrollMonth);
   const payroll = useQuery(
     queryOpts(["rep-payroll", activeSession?.id, today.slice(0, 7)], () =>
-      fetchPay({ data: { sessionId: activeSession?.id, month: today.slice(0, 7) } })
+      fetchPay({ data: { sessionId: activeSession?.id, month: today.slice(0, 7) + "-01" } })
     )
   );
 
@@ -55,9 +55,7 @@ function ReportsPage() {
 
   const fetchAtt = useServerFn(getMyAttendance);
   const att = useQuery(
-    queryOpts(["rep-att", activeSession?.id], () =>
-      fetchAtt({ data: { sessionId: activeSession?.id, date: undefined } })
-    )
+    queryOpts(["rep-att", today.slice(0, 7)], () => fetchAtt({ data: { month: today.slice(0, 7) } }))
   );
 
   const exportPending = () => {
@@ -88,7 +86,7 @@ function ReportsPage() {
   };
 
   const exportIncomeExpense = () => {
-    const rows = ((tx.data as any[]) ?? []).filter((t) => !t.voided);
+    const rows = (((tx.data as any)?.rows ?? []) as any[]).filter((t) => !t.voided);
     const inc = rows.filter((t) => t.type === "income");
     const exp = rows.filter((t) => t.type === "expense");
     downloadCSV(`report-income-expense-${monthFrom}-to-${monthTo}.csv`, [
@@ -109,33 +107,41 @@ function ReportsPage() {
   const exportPayroll = () => {
     const rows = (payroll.data as any[]) ?? [];
     downloadCSV(`report-payroll-${today.slice(0, 7)}.csv`, [
-      ["Staff", "Designation", "Monthly Salary", "Present", "Absent", "Half Days", "Approved Leave", "Paid Days", "Computed Salary", "Paid", "Due"],
-      ...rows.map((r) => [
-        r.name,
-        r.designation ?? "",
-        String(r.monthly_salary),
-        String(r.present),
-        String(r.absent),
-        String(r.half_day),
-        String(r.on_leave),
-        String(r.saved_paid_days ?? r.paid_days),
-        String(r.saved_computed ?? r.computed),
-        String(r.paid_amount),
-        String(r.due),
-      ]),
-      ["", "", "", "", "", "", "", "", "TOTAL", String(rows.reduce((a, r) => a + (r.saved_computed ?? r.computed), 0)), String(rows.reduce((a, r) => a + r.paid_amount, 0)), String(rows.reduce((a, r) => a + r.due, 0))],
+      ["Staff", "Designation", "Monthly Salary", "Present", "Absent", "Half Days", "Leave", "Paid Days", "Computed Salary", "Paid", "Due"],
+      ...rows.map((r) => {
+        const computed = r.saved ? Number(r.saved.computed_salary) : r.computed;
+        const paidDays = r.saved ? Number(r.saved.paid_days) : r.paidDays;
+        const due = Math.max(0, computed - Number(r.paidMonth ?? 0));
+        return [
+          r.staff.name,
+          r.staff.designation ?? "",
+          String(r.staff.monthly_salary),
+          String(r.present),
+          String(r.absent),
+          String(r.half),
+          String(r.leave),
+          String(paidDays),
+          String(computed),
+          String(r.paidMonth ?? 0),
+          String(due),
+        ];
+      }),
+      ["", "", "", "", "", "", "", "", "TOTAL", String(rows.reduce((a, r) => a + (r.saved ? Number(r.saved.computed_salary) : r.computed), 0)), String(rows.reduce((a, r) => a + Number(r.paidMonth ?? 0), 0))],
     ]);
   };
 
   const exportMyAttendance = () => {
-    const rows = ((att.data as any[]) ?? []).filter((a) => a.att_date >= monthFrom && a.att_date <= monthTo);
     downloadCSV(`report-my-attendance-${monthFrom}-to-${monthTo}.csv`, [
       ["Date", "Status", "Marked By", "Remarks"],
-      ...rows.map((a) => [a.att_date, a.status, a.marked_by_name ?? "", a.remarks ?? ""]),
+      ...attRows.map((a) => [a.att_date, a.status, a.marked_by_name ?? "", a.remarks ?? ""]),
     ]);
   };
 
   const pendingData = pending.data as any;
+
+  const attRows = (((att.data as any)?.records ?? []) as any[]).filter(
+    (a) => a.att_date >= monthFrom && a.att_date <= monthTo
+  );
 
   return (
     <div>
@@ -183,7 +189,7 @@ function ReportsPage() {
               title="Income & expense summary"
               desc={
                 tx.data
-                  ? `${((tx.data as any[]) ?? []).filter((t) => !t.voided).length} transactions in range`
+                  ? `${(((tx.data as any)?.rows ?? []) as any[]).filter((t) => !t.voided).length} transactions in range`
                   : "Loading…"
               }
               onExport={exportIncomeExpense}
@@ -205,7 +211,7 @@ function ReportsPage() {
         </>
       )}
 
-      {(role === "staff" || att.data) && (
+      {(role === "staff" || attRows.length > 0) && (
         <>
           <SectionTitle>My attendance</SectionTitle>
           <div className="grid gap-2.5 md:grid-cols-2">

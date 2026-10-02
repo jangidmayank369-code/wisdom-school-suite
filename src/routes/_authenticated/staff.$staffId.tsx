@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { getMyAttendance, getStaffDetail, payStaff } from "@/lib/erp.functions";
+import { getStaffDetail, payStaff } from "@/lib/erp.functions";
 import { useErp } from "@/components/erp/AppShell";
 import { Card, MoneyStat, PageHeader, SectionTitle, StatusBadge } from "@/components/erp/parts";
 import { ReceiptDialog, ReceiptLine } from "@/components/erp/Receipt";
@@ -33,22 +33,12 @@ const MODES = ["Cash", "UPI", "Bank Transfer", "Cheque", "Other"];
 
 function StaffDetailPage() {
   const { staffId } = Route.useParams();
-  const { userId, isFinance, isAdmin, activeSession } = useErp();
+  const { isFinance, activeSession } = useErp();
   const qc = useQueryClient();
 
   const fetchDetail = useServerFn(getStaffDetail);
   const { data } = useSuspenseQuery(
     queryOptions({ queryKey: ["staff", staffId], queryFn: () => fetchDetail({ data: { id: staffId } }) })
-  );
-
-  // Own attendance for staff viewing their own profile
-  const fetchMyAtt = useServerFn(getMyAttendance);
-  const attQ = useQuery(
-    queryOptions({
-      queryKey: ["myAttendance", activeSession?.id, staffId],
-      queryFn: () => fetchMyAttendance({ data: { sessionId: activeSession?.id, staffId } }),
-      enabled: data.staff?.user_id === userId || !isFinance,
-    })
   );
 
   const s: any = data.staff;
@@ -65,7 +55,7 @@ function StaffDetailPage() {
       payStaff({
         data: {
           staff_id: staffId,
-          session_id: s.session_id ?? activeSession?.id ?? null,
+          session_id: activeSession?.id ?? null,
           amount: Number(amount),
           payment_date: date,
           payment_mode: mode,
@@ -87,6 +77,7 @@ function StaffDetailPage() {
   });
 
   if (!s) return <p className="p-6 text-center text-sm text-muted-foreground">Staff not found.</p>;
+  const attendance = data.attendance ?? [];
 
   return (
     <div>
@@ -108,13 +99,13 @@ function StaffDetailPage() {
         <>
           <div className="grid grid-cols-3 gap-2.5">
             <MoneyStat label="Monthly salary" value={s.monthly_salary} />
-            <MoneyStat label="Paid" value={data.totalPaid} tone="success" />
-            <MoneyStat label="Due" value={data.salaryDue} tone={data.salaryDue > 0.009 ? "danger" : "success"} />
+            <MoneyStat label="Paid" value={data.paidTotal} tone="success" />
+            <MoneyStat label="Due" value={data.balance} tone={data.balance > 0.009 ? "danger" : "success"} />
           </div>
           <div className="mt-4">
             <Button
               onClick={() => {
-                setAmount(String(Math.max(0, Math.round(data.salaryDue))));
+                setAmount(String(Math.max(0, Math.round(data.balance))));
                 setOpen(true);
               }}
             >
@@ -147,11 +138,11 @@ function StaffDetailPage() {
         ))}
       </Card>
 
-      {attQ.data && attQ.data.length > 0 && (
+      {attendance.length > 0 && (
         <>
           <SectionTitle>Recent attendance</SectionTitle>
           <Card className="divide-y p-0">
-            {attQ.data.slice(0, 10).map((a: any) => (
+            {attendance.slice(0, 10).map((a: any) => (
               <div key={a.id} className="flex items-center gap-3 px-4 py-2">
                 <span className="text-sm">{fmtDate(a.att_date)}</span>
                 <div className="flex-1" />
