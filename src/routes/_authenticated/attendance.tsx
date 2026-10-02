@@ -100,7 +100,7 @@ function AdminAttendance() {
           {(mut.error as Error).message}
         </p>
       )}
-ecord      {mut.isSuccess && <p className="mt-3 text-center text-xs text-emerald-600">Saved.</p>}
+      {mut.isSuccess && <p className="mt-3 text-center text-xs text-emerald-600">Saved.</p>}
     </div>
   );
 }
@@ -156,6 +156,6 @@ function MyAttendance() {
             </div>
           ))}
       </Card>
-ecord    </div>
+</div>
   );
 }
