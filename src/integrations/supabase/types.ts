@@ -81,7 +81,29 @@ export type Database = {
           staff_id?: string
           vehicle_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "driver_km_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_km_logs_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_km_logs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expense_categories: {
         Row: {
@@ -171,7 +193,29 @@ export type Database = {
           updated_by?: string | null
           voided?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fee_payments_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fee_payments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_balances"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "fee_payments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       leave_requests: {
         Row: {
@@ -216,7 +260,15 @@ export type Database = {
           status?: string
           to_date?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "leave_requests_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       maintenance_expenses: {
         Row: {
@@ -279,7 +331,15 @@ export type Database = {
           vendor?: string | null
           voided?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_expenses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payment_date_changes: {
         Row: {
@@ -360,7 +420,22 @@ export type Database = {
           updated_by?: string | null
           working_days?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "payroll_periods_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_periods_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -507,7 +582,15 @@ export type Database = {
           status?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "staff_attendance_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       staff_payments: {
         Row: {
@@ -558,7 +641,22 @@ export type Database = {
           updated_by?: string | null
           voided?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "staff_payments_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_payments_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_charges: {
         Row: {
@@ -597,7 +695,36 @@ export type Database = {
           updated_at?: string | null
           updated_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "student_charges_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "fee_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_charges_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_charges_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_balances"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_charges_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       students: {
         Row: {
@@ -669,7 +796,22 @@ export type Database = {
           vehicle_id?: string | null
           whatsapp?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "students_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transactions: {
         Row: {
@@ -726,7 +868,15 @@ export type Database = {
           updated_by?: string | null
           voided?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "transactions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transport_expenses: {
         Row: {
@@ -783,7 +933,22 @@ export type Database = {
           vendor?: string | null
           voided?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "transport_expenses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_expenses_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_modules: {
         Row: {
@@ -858,7 +1023,15 @@ export type Database = {
           route_name?: string
           vehicle_number?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vehicles_driver_staff_id_fkey"
+            columns: ["driver_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -870,7 +1043,15 @@ export type Database = {
           total_paid: number | null
           total_payable: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "students_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "academic_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
