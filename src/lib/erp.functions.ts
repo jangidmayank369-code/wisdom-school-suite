@@ -173,11 +173,11 @@ export const getStudents = createServerFn({ method: "GET" })
     const s = context.supabase;
     let q = s
       .from("students")
-      .select("id, admission_no, sr_number, name, father_name, class_name, section, contact, whatsapp, transport_required, status, vehicle_id, session_id")
+      .select("id, admission_no, sr_number, name, father_name, mother_name, dob, gender, class_name, section, contact, whatsapp, address, admission_date, transport_required, status, vehicle_id, session_id")
       .eq("archived", false)
       .order("class_name")
       .order("name")
-      .limit(500);
+      .limit(2000);
     if (data.sessionId) q = q.eq("session_id", data.sessionId);
     if (data.q) q = q.or(`name.ilike.%${data.q}%,admission_no.ilike.%${data.q}%,father_name.ilike.%${data.q}%`);
     if (data.className) q = q.eq("class_name", data.className);
@@ -332,7 +332,9 @@ export const createStudent = createServerFn({ method: "POST" })
       .parse(d)
   )
   .handler(async ({ context, data }) => {
-    const { data: row, error } = await context.supabase.from("students").insert(data as any).select("id").single();
+    const { data: dup } = await context.supabase.from("students").select("id").eq("session_id", data.session_id).eq("admission_no", data.admission_no.trim()).limit(1);
+    if (dup?.length) throw new Error(`Admission no ${data.admission_no} already exists in this session`);
+    const { data: row, error } = await context.supabase.from("students").insert({ ...clean(data), transport_required: data.transport_required, created_by: context.userId } as any).select("id").single();
     if (error) throw error;
     return row;
   });
@@ -345,7 +347,7 @@ export const getStaffList = createServerFn({ method: "GET" })
     const s = context.supabase;
     const { data, error } = await s
       .from("staff")
-      .select("id, staff_code, name, designation, department, contact, joining_date, monthly_salary, payment_type, status")
+      .select("id, staff_code, name, designation, department, contact, joining_date, monthly_salary, payment_type, status, archived")
       .eq("archived", false)
       .order("name");
     if (error) throw error;
@@ -396,7 +398,9 @@ export const createStaff = createServerFn({ method: "POST" })
       .parse(d)
   )
   .handler(async ({ context, data }) => {
-    const { data: row, error } = await context.supabase.from("staff").insert(data as any).select("id").single();
+    const { data: dup } = await context.supabase.from("staff").select("id").eq("staff_code", data.staff_code.trim()).limit(1);
+    if (dup?.length) throw new Error(`Employee ID ${data.staff_code} already exists`);
+    const { data: row, error } = await context.supabase.from("staff").insert(clean(data) as any).select("id").single();
     if (error) throw error;
     return row;
   });
@@ -1061,4 +1065,96 @@ export const getFeePaymentsList = createServerFn({ method: "GET" })
     const { data: rows, error } = await q;
     if (error) throw error;
     return rows ?? [];
+  });
+
+// ---------- Student / Staff edit + import ----------
+
+const studentFields = {
+  admission_no: z.string().trim().min(1),
+  sr_number: z.string().optional().nullable(),
+  name: z.string().trim().min(1),
+  father_name: z.string().optional().nullable(),
+  mother_name: z.string().optional().nullable(),
+  dob: z.string().optional().nullable(),
+  gender: z.string().optional().nullable(),
+  class_name: z.string().trim().min(1),
+  section: z.string().optional().nullable(),
+  contact: z.string().optional().nullable(),
+  whatsapp: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
+  admission_date: z.string().optional().nullable(),
+  status: z.string().optional(),
+};
+
+const clean = (o: Record<string, any>) => {
+  const r: Record<string, any> = {};
+  for (const [k, v] of Object.entries(o)) r[k] = typeof v === "string" ? (v.trim() === "" ? null : v.trim()) : v;
+  return r;
+};
+
+export const updateStudent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ id: z.string().uuid(), session_id: z.string().uuid(), ...studentFields }).parse(d))
+  .handler(async ({ context, data }) => {
+    const s = context.supabase;
+    const { id, ...rest } = data;
+    const { data: dup } = await s.from("students").select("id").eq("session_id", data.session_id).eq("admission_no", data.admission_no).neq("id", id).limit(1);
+    if (dup?.length) throw new Error(`Admission no ${data.admission_no} already used by another student in this session`);
+    const payload = clean(rest);
+    payload.admission_no = data.admission_no; payload.name = data.name; payload.class_name = data.class_name;
+    if (!payload.status) delete payload.status;
+    const { error } = await s.from("students").update(payload as any).eq("id", id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+export const importStudents = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ session_id: z.string().uuid(), rows: z.array(z.object(studentFields)).min(1).max(1000) }).parse(d))
+  .handler(async ({ context, data }) => {
+    const s = context.supabase;
+    const { data: existing, error: e1 } = await s.from("students").select("admission_no").eq("session_id", data.session_id);
+    if (e1) throw e1;
+    const seen = new Set((existing ?? []).map((r: any) => String(r.admission_no).toLowerCase()));
+    const skipped: string[] = [];
+    const toInsert: any[] = [];
+    for (const r of data.rows) {
+      const k = r.admission_no.toLowerCase();
+      if (seen.has(k)) { skipped.push(r.admission_no); continue; }
+      seen.add(k);
+      const c = clean(r);
+      toInsert.push({ ...c, status: c.status ?? "active", session_id: data.session_id, transport_required: false, created_by: context.userId });
+    }
+    if (toInsert.length) {
+      const { error } = await s.from("students").insert(toInsert);
+      if (error) throw error;
+    }
+    return { inserted: toInsert.length, skipped };
+  });
+
+export const updateStaff = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({
+      id: z.string().uuid(),
+      staff_code: z.string().trim().min(1),
+      name: z.string().trim().min(1),
+      designation: z.string().optional().nullable(),
+      department: z.string().optional().nullable(),
+      contact: z.string().optional().nullable(),
+      joining_date: z.string().optional().nullable(),
+      monthly_salary: z.number().nonnegative(),
+      payment_type: z.string().min(1),
+      status: z.string().min(1),
+    }).parse(d)
+  )
+  .handler(async ({ context, data }) => {
+    const s = context.supabase;
+    if (!(await isAdmin(s, context.userId as string))) throw new Error("Only Admin can edit staff");
+    const { data: dup } = await s.from("staff").select("id").eq("staff_code", data.staff_code).neq("id", data.id).limit(1);
+    if (dup?.length) throw new Error(`Employee ID ${data.staff_code} already exists`);
+    const { id, ...rest } = data;
+    const { error } = await s.from("staff").update(clean(rest) as any).eq("id", id);
+    if (error) throw error;
+    return { ok: true };
   });
