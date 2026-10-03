@@ -41,14 +41,16 @@ function UsersPage() {
       </div>
     );
   }
-  return <AdminUsers qc={qc} setError={setError} />;
+  return <AdminUsers qc={qc} error={error} setError={setError} />;
 }
 
 function AdminUsers({
   qc,
+  error,
   setError,
 }: {
   qc: ReturnType<typeof useQueryClient>;
+  error: string | null;
   setError: (e: string | null) => void;
 }) {
   const fetchU = useServerFn(getUsers);

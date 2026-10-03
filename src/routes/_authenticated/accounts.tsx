@@ -47,7 +47,7 @@ function AccountsPage() {
       queryFn: () => fetchT({ data: { sessionId: activeSession?.id, from, to, type: type === "all" ? undefined : type } }),
     })
   );
-  const txns = (data as any[]) ?? [];
+  const txns = ((data as unknown as { rows?: any[] })?.rows ?? []) as any[];
 
   const totals = useMemo(() => {
     const inc = txns.filter((t) => !t.voided && t.type === "income").reduce((a, t) => a + Number(t.amount), 0);
@@ -188,7 +188,7 @@ function AccountsPage() {
                 <Label>Type</Label>
                 <Select
                   value={f.type}
-                  onValueChange={(v) => setF({ ...f, type: v, category: v === "income" ? INCOME_CATS[0] : EXPENSE_CATS[0] })}
+                  onValueChange={(v) => setF({ ...f, type: v, category: (v === "income" ? INCOME_CATS[0] : EXPENSE_CATS[0]) ?? "Other" })}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
